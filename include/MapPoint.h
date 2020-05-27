@@ -247,7 +247,7 @@ public:
     // a 已经和当前帧经过匹配（TrackReferenceKeyFrame，TrackWithMotionModel）但在优化过程中认为是外点
     // b 已经和当前帧经过匹配且为内点，这类点也不需要再进行投影   //? 为什么已经是内点了之后就不需要再进行投影了呢? 
     // c 不在当前相机视野中的点（即未通过isInFrustum判断）     //? 
-    bool mbTrackInView;
+    bool mbTrackInView;    //决定一个地图点是否进行重投影的标志
     // TrackLocalMap - UpdateLocalPoints 中防止将MapPoints重复添加至mvpLocalMapPoints的标记
     long unsigned int mnTrackReferenceForFrame;
     // TrackLocalMap - SearchLocalPoints 中决定是否进行isInFrustum判断的变量

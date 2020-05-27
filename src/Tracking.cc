@@ -580,8 +580,7 @@ void Tracking::Track()
                     if(!mVelocity.empty())
                     {
                         bOKMM = TrackWithMotionModel();
-                        // 这三行没啥用？
-                        //? 这三行中的内容会在上面的函数中被更新吗?
+                        // 这三行中的内容会在上面的函数中被更新
                         vpMPsMM = mCurrentFrame.mvpMapPoints;
                         vbOutMM = mCurrentFrame.mvbOutlier;
                         TcwMM = mCurrentFrame.mTcw.clone();
@@ -593,8 +592,7 @@ void Tracking::Track()
                     // 重定位没有成功，但是如果跟踪成功
                     if(bOKMM && !bOKReloc)
                     {
-                        // 这三行没啥用？
-                        //? 这里为什么说没啥用呢?
+     
                         mCurrentFrame.SetPose(TcwMM);
                         mCurrentFrame.mvpMapPoints = vpMPsMM;
                         mCurrentFrame.mvbOutlier = vbOutMM;
@@ -1443,7 +1441,7 @@ bool Tracking::TrackLocalMap()
     // We retrieve the local map and try to find matches to points in the local map.
 
     // Update Local KeyFrames and Local Points
-    // step 1：更新局部关键帧mvpLocalKeyFrames和局部地图点mvpLocalMapPoints -- NO, 局部关键帧在这里面根本没有更新，只是利用而已
+    // step 1：更新局部关键帧mvpLocalKeyFrames和局部地图点mvpLocalMapPoints
     UpdateLocalMap();
 
     // step 2：在局部地图中查找与当前帧匹配的MapPoints, 其实也就是对局部地图点进行跟踪
@@ -1836,7 +1834,7 @@ void Tracking::SearchLocalPoints()
 void Tracking::UpdateLocalMap()
 {
     // This is for visualization
-    // 这行程序放在UpdateLocalPoints函数后面是不是好一些
+    // 这行程序放在UpdateLocalPoints函数后面是不是好一些  //FIXME:
     mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
 
     // Update
@@ -1869,9 +1867,6 @@ void Tracking::UpdateLocalPoints()
             if(!pMP)
                 continue;
             // mnTrackReferenceForFrame 防止重复添加局部MapPoint
-            //? 目前不太懂,变量名为什么取这个,以及在之前的什么地方会出现 这个条件被满足 的可能
-            //取这个名字的原因可能是表示最近一次追踪到这个地图点是在哪一帧
-            //应该是已经添加过了
             if(pMP->mnTrackReferenceForFrame==mCurrentFrame.mnId)
                 continue;
             if(!pMP->isBad())
@@ -2111,7 +2106,7 @@ bool Tracking::Relocalization()
 
     // Alternatively perform some iterations of P4P RANSAC
     // Until we found a camera pose supported by enough inliers
-    //? 这里的 P4P RANSAC 是啥意思啊   @lishuwei0424:我认为是Epnp，每次迭代需要4个点
+    // Epnp，每次迭代需要4个点
     //是否已经找到相匹配的关键帧的标志
     bool bMatch = false;
     ORBmatcher matcher2(0.9,true);
@@ -2173,7 +2168,7 @@ bool Tracking::Relocalization()
                 //只优化位姿,不优化地图点的坐标;返回的是内点的数量
                 int nGood = Optimizer::PoseOptimization(&mCurrentFrame);
 
-                // ? 如果优化之后的内点数目不多,注意这里是直接跳过了本次循环,但是却没有放弃当前的这个关键帧
+                // ? 如果优化之后的内点数目不多,直接跳过了本次循环
                 if(nGood<10)
                     continue;
 

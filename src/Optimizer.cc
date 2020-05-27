@@ -523,6 +523,11 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 
         vSE3->setEstimate(Converter::toSE3Quat(pFrame->mTcw));
         // 其实就是初始化优化器,这里的参数0就算是不填写,默认也是0,也就是只对level为0的边进行优化
+        /* setLevel(int ) is useful when you call optimizer.initializeOptimization(int ). 
+         * If you assign initializeOptimization(0), 
+         * the optimizer will include all edges up to level 0 in the optimization, 
+         * and edges set to level >=1 will not be included.
+        */
         optimizer.initializeOptimization(0);
         // 优化!盘它!
         optimizer.optimize(its[it]);

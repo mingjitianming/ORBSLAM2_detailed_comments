@@ -745,7 +745,8 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
                         if(kpUn.octave>maxLevel)
                             continue;
                 }               
-
+                
+                // ? 在矩形内查找候选点
                 // 通过检查，计算候选特征点到圆中心的距离，查看是否是在这个圆形区域之内
                 const float distx = kpUn.pt.x-x;
                 const float disty = kpUn.pt.y-y;

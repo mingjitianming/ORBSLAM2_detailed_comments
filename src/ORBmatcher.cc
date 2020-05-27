@@ -317,7 +317,7 @@ int ORBmatcher::SearchByBoW(KeyFrame* pKF,Frame &F, vector<MapPoint*> &vpMapPoin
                     if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
                     {
                         // 步骤5：更新特征点的MapPoint --  应该是把这个认为匹配成功的(关键帧的)地图点记录起来吧
-                        vpMapPointMatches[bestIdxF]=pMP;
+                        vpMapPointMatches[bestIdxF]=pMP;  // bestIdxF 为frame中特征点id
 
                         // 这里的realIdxKF是当前遍历到的关键帧的特征点id
                         const cv::KeyPoint &kp = pKF->mvKeysUn[realIdxKF];
@@ -1613,7 +1613,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     int nmatches = 0;
 
     // Rotation Histogram (to check rotation consistency)
-    vector<int> rotHist[HISTO_LENGTH];
+    vector<int> rotHist[HISTO_LENGTH];  //HISTO_LENGTH==30
     for(int i=0;i<HISTO_LENGTH;i++)
         rotHist[i].reserve(500);
     const float factor = HISTO_LENGTH/360.0f;
@@ -1665,7 +1665,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                     continue;
 
                 // 认为投影前后地图点的尺度信息不变
-                int nLastOctave = LastFrame.mvKeys[i].octave;
+                int nLastOctave = LastFrame.mvKeys[i].octave;  //XXX:
 
                 // Search in a window. Size depends on scale
                 float radius = th*CurrentFrame.mvScaleFactors[nLastOctave]; // 尺度越大，搜索范围越大
@@ -1701,10 +1701,10 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
                         if(CurrentFrame.mvpMapPoints[i2]->Observations()>0)
                             continue;
 
-                    if(CurrentFrame.mvuRight[i2]>0)
+                    if(CurrentFrame.mvuRight[i2]>0)   //mvuRight 没有在左目中找到匹配的默认值为-1
                     {
                         // 双目和rgbd的情况，需要保证右图的点也在搜索半径以内
-                        const float ur = u - CurrentFrame.mbf*invzc;
+                        const float ur = u - CurrentFrame.mbf*invzc;  //u - d(视差)
                         const float er = fabs(ur - CurrentFrame.mvuRight[i2]);
                         if(er>radius)
                             continue;
@@ -1824,7 +1824,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, KeyFrame *pKF, const set
                     continue;
 
                 // NOTICE 原版的程序中也没有这里对尺度的剔除操作
-                //之前这句话有误操作,如果编译不正确或者运行不正确查看这里
+                // 与cF与KF相距时间较lastFrame大,故不能使用lastFrame的Octave
                 int nPredictedLevel = pMP->PredictScale(dist3D,&CurrentFrame);
                 // Search in a window
                 //之前这句话有误操作,如果编译不正确或者运行不正确查看这里

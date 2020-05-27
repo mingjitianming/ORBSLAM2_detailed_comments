@@ -102,7 +102,7 @@ protected:
   // Associated vocabulary
   const ORBVocabulary* mpVoc; ///< 预先训练好的词典
 
-  // Inverted file
+  // Inverted file  // 在LoopClosing 中添加
   std::vector<list<KeyFrame*> > mvInvertedFile; ///< 倒排索引，mvInvertedFile[i]表示包含了第i个word id的所有关键帧
 
   /// Mutex, 多用途的

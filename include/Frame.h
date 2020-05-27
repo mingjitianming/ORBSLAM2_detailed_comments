@@ -369,9 +369,9 @@ public:
     
     // Bag of Words Vector structures.
     ///和词袋模型有关的向量
-    DBoW2::BowVector mBowVec;
+    DBoW2::BowVector mBowVec;  //词袋向量，记录的是单词的id及其对应权重TF-IDF值
     ///和词袋模型中特征有关的向量
-    DBoW2::FeatureVector mFeatVec;
+    DBoW2::FeatureVector mFeatVec;  //输出，记录node id及其对应的图像 feature对应的索引
     ///@todo 这两个向量目前的具体含义还不是很清楚
 
     // ORB descriptor, each row associated to a keypoint.

@@ -259,7 +259,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
     {
         unique_lock<mutex> lock(mMutex);
 
-        // words是检测图像是否匹配的枢纽，遍历该pKF的每一个word
+        // words是检测图像是否匹配的枢纽，遍历该F的每一个word
         for(DBoW2::BowVector::const_iterator vit=F->mBowVec.begin(), vend=F->mBowVec.end(); vit != vend; vit++)
         {
             // 提取所有包含该word的KeyFrame
@@ -333,7 +333,7 @@ vector<KeyFrame*> KeyFrameDatabase::DetectRelocalizationCandidates(Frame *F)
         for(vector<KeyFrame*>::iterator vit=vpNeighs.begin(), vend=vpNeighs.end(); vit!=vend; vit++)
         {
             KeyFrame* pKF2 = *vit;
-            if(pKF2->mnRelocQuery!=F->mnId)
+            if(pKF2->mnRelocQuery!=F->mnId)  // 只有pKF2也在闭环候选帧中，才能贡献分数
                 continue;
 
             accScore+=pKF2->mRelocScore;// 只有pKF2也在闭环候选帧中，才能贡献分数
