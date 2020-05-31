@@ -456,13 +456,6 @@ void Frame::SetPose(cv::Mat Tcw)
 //根据Tcw计算mRcw、mtcw和mRwc、mOw
 void Frame::UpdatePoseMatrices()
 {
-    /** 主要计算四个量. 定义程序中的符号和公式表达: \n
-     * Frame::mTcw = \f$ \mathbf{T}_{cw} \f$ \n
-     * Frame::mRcw = \f$ \mathbf{R}_{cw} \f$ \n
-     * Frame::mRwc = \f$ \mathbf{R}_{wc} \f$ \n
-     * Frame::mtcw = \f$ \mathbf{t}_{cw} \f$ 即相机坐标系下相机坐标系到世界坐标系间的向量, 向量方向由相机坐标系指向世界坐标系\n
-     * Frame::mOw  = \f$ \mathbf{O}_{w} \f$  即世界坐标系下世界坐标系到相机坐标系间的向量, 向量方向由世界坐标系指向相机坐标系\n  
-     * 步骤: */
     /** 1. 计算mRcw,即相机从世界坐标系到当前帧的相机位置的旋转. \n
      * 这里是直接从 Frame::mTcw 中提取出旋转矩阵. \n*/
     // [x_camera 1] = [R|t]*[x_world 1]，坐标为齐次形式
@@ -505,33 +498,6 @@ void Frame::UpdatePoseMatrices()
      */ 
 	
     mOw = -mRcw.t()*mtcw;
-
-	/* 下面都是之前的推导,可能有错误,不要看!!!!!
-	其实上面的算式可以写成下面的形式：
-	mOw=(Rcw')*(-tcw)*[0,0,0]'  (MATLAB写法)（但是这里的计算步骤貌似是不对的）
-	这里的下标有些意思，如果倒着读，就是“坐标系下点的坐标变化”，如果正着读，就是“坐标系本身的变化”，正好两者互逆
-	所以这里就有：
-	tcw:相机坐标系到世界坐标系的平移向量
-	-tcw:世界坐标系到相机坐标系的平移向量
-	Rcw：相机坐标系到世界坐标系所发生的旋转
-	Rcw^t=Rcw^-1:世界坐标系到相机坐标系所发生的旋转
-	最后一个因子则是世界坐标系的原点坐标
-	不过这样一来，如果是先旋转后平移的话，上面的计算公式就是这个了：
-	mOw=(Rcw')*[0,0,0]'+(-tcw)
-	唉也确实是，对于一个原点无论发生什么样的旋转，其坐标还是不变啊。有点懵逼。
-	会不会是这样：在讨论坐标系变换问题的时候，我们处理的是先平移，再旋转？如果是这样的话：
-	mOw=(Rcw')*([0,0,0]'+(-tcw))=(Rcw')*(-tcw)
-	就讲得通了
-	新问题：这里的mOw和-tcw又是什么关系呢?目前来看好似是前者考虑了旋转而后者没有（后来的想法证明确实是这样的）
-	另外还有一种理解方法：
-	Pc=Rcw*Pw+tcw
-	Pc-tcw=Rcw*Pw
-	Rcw'(Pc-tcw)=Pw		然后前面是对点在不同坐标系下的坐标变换，当计算坐标系本身的变化的时候反过来，
-	(这一行的理解不正确)将Pc认为是世界坐标系原点坐标，Pw认为是相机的光心坐标
-    应该这样说,当P点就是相机光心的时候,Pw其实就是这里要求的mOw,Pc明显=0
-	Rcw'(o-tcw)=c
-	c=Rcw'*(-tcw)			就有了那个式子
-	**/
 }
 
 // 判断路标点是否在视野中
@@ -548,12 +514,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     /** <li> 2.获得这个地图点的世界坐标, 使用 MapPoint::GetWorldPos() 来获得。</li>\n*/
     cv::Mat P = pMP->GetWorldPos(); 
 
-    // 3D in camera coordinates
-    /** <li> 3.然后根据 Frame::mRcw 和 Frame::mtcw 计算这个点\f$\mathbf{P}\f$在当前相机坐标系下的坐标: </li>\n
-     * \f$ \mathbf{R}_{cw}\mathbf{P}+\mathbf{t}_{cw} \f$ \n
-     * 并提取出三个坐标的坐标值.
-     */ 
-    
+    // 3D in camera coordinates 
     const cv::Mat Pc = mRcw*P+mtcw; // 这里的Rt是经过初步的优化后的
     //然后提取出三个坐标的坐标值
     const float &PcX = Pc.at<float>(0);
@@ -647,10 +608,7 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
     // Data used by the tracking	
     /** <li> 8.2 通过置位标记 MapPoint::mbTrackInView 来表示这个地图点要被投影 </li> */
     pMP->mbTrackInView = true;	
-    /** <li> 8.3 然后计算这个点在左侧图像和右侧图像中的横纵坐标。 </li> 
-     * 地图点在当前帧中被追踪到的横纵坐标其实就是其投影在当前帧上的像素坐标 u,v => MapPoint::mTrackProjX,MapPoint::mTrackProjY \n
-     * 其中在右侧图像上的横坐标 MapPoint::mTrackProjXR 按照公式计算：\n
-     * \f$ X_R=u-z^{-1} \cdot mbf \f$ \n
+    /** 
      * 其来源参考SLAM十四讲的P51式5.16。
     */
     pMP->mTrackProjX = u;				//该地图点投影在左侧图像的像素横坐标
@@ -658,14 +616,12 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 										//这里确实直接使用mbf计算会非常方便
     pMP->mTrackProjY = v;				//该地图点投影在左侧图像的像素纵坐标
 
-    pMP->mnTrackScaleLevel = nPredictedLevel;		//TODO 根据上面的计算来看是存储了根据深度预测的尺度，但是有什么用不知道
-    /** <li> 8.4 保存当前视角和平均视角夹角的余弦值 </li></ul>*/
+    pMP->mnTrackScaleLevel = nPredictedLevel;	// 存储根据深度预测的尺度，在接下来的searchbyprojection中使用
+    // 保存当前视角和平均视角夹角的余弦值 
     pMP->mTrackViewCos = viewCos;					
 
     //执行到这里说明这个地图点在相机的视野中并且进行重投影是可靠的，返回true
     return true;
-
-    /** </ul> */
 }
 
 /**

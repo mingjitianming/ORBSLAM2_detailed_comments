@@ -89,7 +89,7 @@ void LocalMapping::Run()
         {
             // BoW conversion and insertion in Map
             // VI-A keyframe insertion
-            // 计算关键帧特征点的BoW映射，将关键帧插入地图
+            // 计算关键帧特征点的BoW映射，将关键帧插入地图,更新共视图
             ProcessNewKeyFrame();
 
             // Check recent MapPoints
@@ -211,6 +211,7 @@ void LocalMapping::ProcessNewKeyFrame()
     // Step 2：计算该关键帧特征点的Bow映射关系
     // 得到该关键帧对应的词袋向量
     // 节点的特征向量和特征索引
+      //在Tracking过程中如果没有进行TrackReferenceKeyFrame或Relocalization,则不会计算BoW
     mpCurrentKeyFrame->ComputeBoW();
 
     // Associate MapPoints to the new keyframe and update normal and descriptor
@@ -245,6 +246,7 @@ void LocalMapping::ProcessNewKeyFrame()
                     // 将双目或RGBD跟踪过程中新插入的MapPoints放入mlpRecentAddedMapPoints，等待检查
                     // CreateNewMapPoints函数中通过三角化也会生成MapPoints
                     // 这些MapPoints都会经过MapPointCulling函数的检验
+                    // 在Tracking::CreateNewKeyFrame中根据CurrentFrame生成的MapPoints
                     mlpRecentAddedMapPoints.push_back(pMP);  // 认为这些由当前关键帧生成的地图点不靠谱,将其加入到待检查的地图点列表中
                 }
             }

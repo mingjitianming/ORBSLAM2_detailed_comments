@@ -209,6 +209,7 @@ public:
      * @return true                     在相机视野中
      * @return false                    不在相机视野中
      * @see SearchLocalPoints()
+     * V.C 2)-4)
      */
     bool isInFrustum(MapPoint* pMP, float viewingCosLimit);
 

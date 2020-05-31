@@ -425,7 +425,7 @@ void Initializer::FindFundamental(vector<bool> &vbMatchesInliers, float &score, 
  * 
  * @param[in] vP1               参考帧中归一化后的特征点
  * @param[in] vP2               当前帧中归一化后的特征点
- * @return cv::Mat              计算的单应矩阵
+ * @return cv::Mat              计算的单应矩阵H
  */
 cv::Mat Initializer::ComputeH21(
     const vector<cv::Point2f> &vP1, //归一化后的点, in reference frame
@@ -508,37 +508,32 @@ cv::Mat Initializer::ComputeH21(
 //其实也是运用DLT解法，由于点是三维的因此使用DLT法构造出来的A矩阵和前面的都有些不一样；但是其他的操作和上面计算单应矩阵
 //都是基本相似的
 
-//从特征点匹配求fundamental matrix（normalized 8点法）
-/** @see Initializer::ComputeH21() */
+
+
+/**
+ * @brief 根据特征点匹配求fundamental matrix（normalized 8点法）
+ * 注意F矩阵有秩为2的约束，所以需要两次SVD分解
+ * 
+ * @param[in] vP1           参考帧中归一化后的特征点
+ * @param[in] vP2           当前帧中归一化后的特征点
+ * @return cv::Mat          最后计算得到的基础矩阵F
+ */
 cv::Mat Initializer::ComputeF21(
     const vector<cv::Point2f> &vP1, //归一化后的点, in reference frame
     const vector<cv::Point2f> &vP2) //归一化后的点, in current frame
 {
-    /** 计算基础矩阵. 其定义是:
-     * \f$ \mathbf{x}^{\text{T}}\mathbf{F}\mathbf{x}=0  \f$
-     * \n 所以和 Initializer::ComputeH21() 类似的思路, 使用 DLT 直接线性分解得到:
-     * \n \f$  \begin{bmatrix} x'\\y'\\1 \end{bmatrix} =
-     * \begin{bmatrix} f_1&f_2&f3\\ f_4&f_5&f6\\ f_7&f_8&f9\\ \end{bmatrix} \cdot
-     * \begin{bmatrix} x\\y\\1 \end{bmatrix} =0  \f$ 
-     * \n 展开计算:
-     * \n \f$  \begin{bmatrix} x'f_1+y'f_4+f_7&x'f_2+y'f_5+f_8&x'f_3+y'f_6+f_9 \end{bmatrix}
-     * \begin{bmatrix} x\\y\\1 \end{bmatrix} = 0 \f$
-     * \n \f$  xx'f_1+xy'f_4+xf_7+x'yf_2+yy'f_5+yf_8+x'f_3+y'f6+f_9=0 \f$
-     * \n \f$  \begin{bmatrix} xx'&x'y&x'&xy'&yy'&y'&x&y&1 \end{bmatrix} 
-     * \begin{bmatrix} f_1\\f_2\\f_3\\f_4\\f_5\\f_6\\f_7\\f_8\\f_9 \end{bmatrix} =0 \f$
-     * \n \f$ \mathbf{A}\cdot\mathbf{f}=0 \f$
-     * \n 于是又得到了这种形式,可以和计算单应矩阵一样的SVD方法来求解了.
-     * \n 计算过程如下: <ul>
-     */ 
-
+    // 原理详见附件推导
+    // x'Fx = 0 整理可得：Af = 0
+    // A = | x'x x'y x' y'x y'y y' x y 1 |, f = | f1 f2 f3 f4 f5 f6 f7 f8 f9 |
+    // 通过SVD求解Af = 0，A'A最小特征值对应的特征向量即为解
 
 	//获取参与计算的特征点对数
     const int N = vP1.size();
 
 	//初始化A矩阵
-    cv::Mat A(N,9,CV_32F); // N*9
+    cv::Mat A(N,9,CV_32F); // N*9维
 
-    /** <li> 对于每对特征点，生成A矩阵的内容 </li> */
+    // 构造矩阵A，将每个特征点添加到矩阵A中的元素
     for(int i=0; i<N; i++)
     {
         const float u1 = vP1[i].x;
@@ -561,9 +556,9 @@ cv::Mat Initializer::ComputeF21(
     cv::Mat u,w,vt;
 
 	
-    /** <li> 进行第一次奇异值分解,求解出基础矩阵, 使用 cv::SVDecomp() 函数 </li> */
+    // 定义输出变量，u是左边的正交矩阵U， w为奇异矩阵，vt中的t表示是右正交矩阵V的转置
     cv::SVDecomp(A,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
-	//转换成基础矩阵的形式
+	// 转换成基础矩阵的形式
     cv::Mat Fpre = vt.row(8).reshape(0, 3); // v的最后一列
 
     //NOTICE 注意基础矩阵的定义中，由于乘了一个t^，这个矩阵因为是从三维向量拓展出来的因此它的秩为2
@@ -585,12 +580,12 @@ cv::Mat Initializer::ComputeF21(
     */
     /** <li> 对初步得来的基础矩阵继续进行一次奇异值分解 </li> */
     cv::SVDecomp(Fpre,w,u,vt,cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
-	/** <li> 强制将第三个奇异值设置为0 </li> */
-    w.at<float>(2)=0; // 秩2约束，将第3个奇异值设为0
-    /** <li> 重新组合好满足秩约束的基础矩阵，作为最终计算结果返回  </li> */
+
+	// 秩2约束，强制将第3个奇异值设置为0
+    w.at<float>(2)=0; 
+    
+    // 重新组合好满足秩约束的基础矩阵，作为最终计算结果返回 
     return  u*cv::Mat::diag(w)*vt;
-    /** </ul> */
-    /** </ul> */
 }//计算基础矩阵
 
 //对给定的homography matrix打分,需要使用到卡方检验的知识

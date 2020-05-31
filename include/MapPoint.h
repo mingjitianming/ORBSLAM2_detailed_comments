@@ -142,7 +142,6 @@ public:
     /**
      * @brief 告知可以观测到该MapPoint的Frame，该MapPoint已被删除
      * //? 最好亲自查看一下这个函数是在哪里被调用的
-     * 
      */
     void SetBadFlag();
     /**
@@ -301,8 +300,8 @@ protected:
     KeyFrame* mpRefKF;
 
     /// Tracking counters
-    int mnVisible;
-    int mnFound;
+    int mnVisible;  // 能看到改点的frame数目
+    int mnFound;    // 能匹配上改点的frame数目
 
     /// Bad flag (we do not currently erase MapPoint from memory)
     bool mbBad;

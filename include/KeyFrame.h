@@ -295,7 +295,7 @@ public:
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
 public:
 
-    /// nNextID名字改为nLastID更合适，表示上一个KeyFrame的ID号
+    /// 表示下一个KeyFrame的ID号
     static long unsigned int nNextId;
     /// 在nNextID的基础上加1就得到了mnID，为当前KeyFrame的ID号
     long unsigned int mnId;
@@ -360,7 +360,9 @@ public:
     const cv::Mat mDescriptors;
 
     //BoW
+    //词袋向量，记录的是单词的id及其对应权重TF-IDF值
     DBoW2::BowVector mBowVec; ///< Vector of words to represent images 当前图像的词袋模型表示
+    // 记录node id及其对应的图像 feature对应的索引
     DBoW2::FeatureVector mFeatVec; ///< Vector of nodes with indexes of local features //?
 
     /// Pose relative to parent (this is computed when bad flag is activated)

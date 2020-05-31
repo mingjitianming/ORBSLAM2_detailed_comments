@@ -1444,8 +1444,7 @@ bool Tracking::TrackLocalMap()
     // step 1：更新局部关键帧mvpLocalKeyFrames和局部地图点mvpLocalMapPoints
     UpdateLocalMap();
 
-    // step 2：在局部地图中查找与当前帧匹配的MapPoints, 其实也就是对局部地图点进行跟踪
-    //? 这里的跟踪怎么理解?
+    // step 2：在局部地图中查找与当前帧匹配的MapPoints,并将MapPoints关联到CurrentF的keypoint
     SearchLocalPoints();
 
     // Optimize Pose
@@ -1505,7 +1504,7 @@ bool Tracking::NeedNewKeyFrame()
 {
     // ?step 1：如果用户在界面上选择重定位，那么将不插入关键帧
     // 由于插入关键帧过程中会生成MapPoint，因此用户选择重定位后地图上的点云和关键帧都不会再增加
-    if(mbOnlyTracking)
+    if(mbOnlyTracking)  //默认已生成完整地图
         return false;
 
     // If Local Mapping is freezed by a Loop Closure do not insert keyframes
@@ -1538,7 +1537,7 @@ bool Tracking::NeedNewKeyFrame()
 
     // Local Mapping accept keyframes?
     // step 4：查询局部地图管理器是否繁忙,也就是当前能否接受新的关键帧
-    bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();pan
+    bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
     // "total matches = matches to map + visual odometry matches"
     // Visual odometry matches will become MapPoints if we insert a keyframe.
     // This ratio measures how many MapPoints we could create if we insert a keyframe.
@@ -1721,7 +1720,7 @@ void Tracking::CreateNewKeyFrame()
                 }
                 else
                 {
-                    //? 这里?????
+                    // 不需要新建MapPoint时,直接使用CurrentFrame中的MapPoint
                     nPoints++;
                 }
 
@@ -1750,7 +1749,7 @@ void Tracking::CreateNewKeyFrame()
 /**
  * @brief 对 Local MapPoints 进行跟踪
  * 
- * 在局部地图中查找在当前帧视野范围内的点，将视野范围内的点和当前帧的特征点进行投影匹配
+ * 在局部地图中查找在当前帧视野范围内的点，将视野范围内的点和当前帧的特征点进行投影匹配,向CurrentF的keypoints添加mappoint
  */
 void Tracking::SearchLocalPoints()
 {
