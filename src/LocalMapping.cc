@@ -746,7 +746,7 @@ void LocalMapping::SearchInNeighbors()
     mpCurrentKeyFrame->UpdateConnections();
 }
 
-// 根据两关键帧的姿态计算两个关键帧之间的基本矩阵
+// 根据两关键帧的姿态计算两个关键帧之间的基本矩阵 frame2 -> frame1
 cv::Mat LocalMapping::ComputeF12(KeyFrame *&pKF1, KeyFrame *&pKF2)
 {
     // 先构造两帧之间的R12,t12
