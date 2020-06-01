@@ -834,7 +834,7 @@ int ORBmatcher::SearchByBoW(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
 }
 
 /*
- * @brief 利用基本矩阵F12，在两个关键帧之间未匹配的特征点中产生新的3d点
+ * @brief 利用基本矩阵F12，在两个关键帧之间未匹配的特征点中产生新的3d点的匹配对
  * @param pKF1          关键帧1
  * @param pKF2          关键帧2
  * @param F12           基础矩阵
