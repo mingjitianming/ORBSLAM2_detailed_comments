@@ -255,8 +255,7 @@ bool LoopClosing::DetectLoop()
                 int nPreviousConsistency = mvConsistentGroups[iG].second;
                 int nCurrentConsistency = nPreviousConsistency + 1;
                 // 如果当前遍历到的"子连续组"还没有和"子候选组有相同的关键帧的记录,那么就+
-                if(!vbConsistentGroup[iG])// 这里作者原本意思是不是应该是vbConsistentGroup[i]而不是vbConsistentGroup[iG]呢？（wubo???）
-                                          //! 应该就是iG,vbConsistentGroup声明时候的大小和mvConsistentGroups是相同的,而在遍历mvConsistentGroups中的每个元素的时候使用的下标是iG
+                if(!vbConsistentGroup[iG])//! 应该就是iG,vbConsistentGroup声明时候的大小和mvConsistentGroups是相同的,而在遍历mvConsistentGroups中的每个元素的时候使用的下标是iG
                                           //! 而i是在遍历vpCandidateKFs也就是经过KeyFrameDatabase得到的一堆初始的闭环候选帧的时候才使用的  --- guoqing
                 {
                     // 将该“子候选组”的该关键帧打上连续编号加入到“当前连续组”
