@@ -959,7 +959,6 @@ int ORBmatcher::SearchForTriangulation(KeyFrame *pKF1, KeyFrame *pKF2, cv::Mat F
                         const float distex = ex-kp2.pt.x;
                         const float distey = ey-kp2.pt.y;
                         // 该特征点距离极点太近，表明kp2对应的MapPoint距离pKF1相机太近
-                        // ? 这里100的单位是什么? mm? cm?
                         // 这个100的单位应该是mm，这个距离是同一幅图像中两个像素点之间的距离，mm应该更合适
                         if(distex*distex+distey*distey<100*pKF2->mvScaleFactors[kp2.octave])
                             continue;
