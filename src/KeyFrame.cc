@@ -612,7 +612,7 @@ void KeyFrame::SetBadFlag()
         }
     }
 
-    // 接下来是真正的要进行删除关键帧的操作了 ---- 感觉这里的操作也应该是在互斥锁的保护中进行啊 ---- 不是,这里操作的是其他的关键帧的成员变量
+    // 接下来是真正的要进行删除关键帧的操作了 
     for(map<KeyFrame*,int>::iterator mit = mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
         mit->first->EraseConnection(this);// 让其它的KeyFrame删除与自己的联系
 
@@ -646,6 +646,7 @@ void KeyFrame::SetBadFlag()
 
             // 遍历每一个子关键帧，让它们更新它们指向的父关键帧
             // ? 感觉这边的循环设计有问题呢, 这里是遍历每一个关键帧
+            // ? FIXME:可不可以直接使用共视图中权重最大的帧(可能需要考虑mnid的关系)作为父关键帧
             for(set<KeyFrame*>::iterator sit=mspChildrens.begin(), send=mspChildrens.end(); sit!=send; sit++)
             {
                 KeyFrame* pKF = *sit;

@@ -477,7 +477,7 @@ void LocalMapping::CreateNewMapPoints()
             // 视差角度小时用三角法恢复3D点，视差角大时用双目恢复3D点（双目以及深度有效）
             if(cosParallaxRays<cosParallaxStereo && cosParallaxRays>0 && (bStereo1 || bStereo2 || cosParallaxRays<0.9998))
             {
-                // Linear Triangulation Method
+                // Linear Triangulation Method (DLT)
                 // 见Initializer.cpp的 Triangulate 函数,实现是一毛一样的,顶多就是把投影矩阵换成了变换矩阵
                 cv::Mat A(4,4,CV_32F);
                 A.row(0) = xn1.at<float>(0)*Tcw1.row(2)-Tcw1.row(0);
@@ -488,7 +488,7 @@ void LocalMapping::CreateNewMapPoints()
                 cv::Mat w,u,vt;
                 cv::SVD::compute(A,w,u,vt,cv::SVD::MODIFY_A| cv::SVD::FULL_UV);
 
-                x3D = vt.row(3).t();
+                x3D = vt.row(3).t();  // 右奇异值矩阵对应最小奇异值的向量为 A*x3D = 0 的解
                 // 归一化之前的检查
                 if(x3D.at<float>(3)==0)
                     continue;
@@ -639,7 +639,7 @@ void LocalMapping::SearchInNeighbors()
     // STEP 1：获得当前关键帧在covisibility图中权重排名前nn的邻接关键帧
     // 找到当前帧一级相邻与二级相邻关键帧
 
-    // 单目情况要10个邻接关键帧，双目或者RGBD则要20个
+    // 单目情况要20个邻接关键帧，双目或者RGBD则要10个
     int nn = 10;
     if(mbMonocular)
         nn=20;
