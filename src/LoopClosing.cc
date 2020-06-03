@@ -130,6 +130,7 @@ bool LoopClosing::CheckNewKeyFrames()
 }
 
 // 检测回环
+// 参考:https://blog.csdn.net/michaelhan3/article/details/89841399#commentBox
 bool LoopClosing::DetectLoop()
 {
     {
