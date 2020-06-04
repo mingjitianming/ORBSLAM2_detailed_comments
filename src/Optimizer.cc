@@ -1364,7 +1364,7 @@ void Optimizer::OptimizeEssentialGraph(Map* pMap, KeyFrame* pLoopKF, KeyFrame* p
  * @param vpMatches1  两个关键帧的匹配关系
  * @param g2oS12      两个关键帧间的Sim3变换
  * @param th2         核函数阈值
- * @param bFixScale   是否优化尺度，弹目进行尺度优化，双目不进行尺度优化
+ * @param bFixScale   是否优化尺度，单目进行尺度优化，双目不进行尺度优化
  */
 int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &vpMatches1, g2o::Sim3 &g2oS12, const float th2, const bool bFixScale)
 {
@@ -1486,10 +1486,11 @@ int Optimizer::OptimizeSim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint *> &
         // step 2.3 添加两个顶点（3D点）到相机投影的边 -- 投影到当前关键帧 -- 正向投影
         g2o::EdgeSim3ProjectXYZ* e12 = new g2o::EdgeSim3ProjectXYZ();
         e12->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id2)));
-        // ? 没看懂为什么这里添加的节点的id为0？
+        // ? 没看懂为什么这里添加的节点的id为0？  
+        // 此处添加的id0，为待优化的sim3变换
         e12->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(0)));
         e12->setMeasurement(obs1);
-        // 信息矩阵也和这个点的可靠程度（在图像金字塔中的图层）有关
+        // 信息矩阵也是这个点的可靠程度（在图像金字塔中的图层）有关
         const float &invSigmaSquare1 = pKF1->mvInvLevelSigma2[kpUn1.octave];
         e12->setInformation(Eigen::Matrix2d::Identity()*invSigmaSquare1);
 

@@ -660,7 +660,7 @@ void LoopClosing::CorrectLoop()
         {
             KeyFrame* pKFi = *vit;
 
-            cv::Mat Tiw = pKFi->GetPose();
+            cv::Mat Tiw = pKFi->GetPose();  // Tcw
 
             // currentKF在前面已经添加
             if(pKFi!=mpCurrentKF)
@@ -810,7 +810,7 @@ void LoopClosing::CorrectLoop()
 
     // Add loop edge
     // STEP 7：添加当前帧与闭环匹配帧之间的边（这个连接关系不优化）
-    // 这两句话应该放在OptimizeEssentialGraph之前，因为OptimizeEssentialGraph的步骤4.2中有优化
+    // FIXME:这两句话应该放在OptimizeEssentialGraph之前，因为OptimizeEssentialGraph的步骤4.2中有优化
     mpMatchedKF->AddLoopEdge(mpCurrentKF);
     mpCurrentKF->AddLoopEdge(mpMatchedKF);
 
@@ -906,7 +906,7 @@ void LoopClosing::ResetIfRequested()
     }
 }
 // 全局BA线程,这个是这个线程的主函数; 输入的函数参数看上去是闭环关键帧,但是在调用的时候给的其实是当前关键帧的id
-void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)
+void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)  // CurrentKeyFrame id
 {
     cout << "Starting Global Bundle Adjustment" << endl;
 
