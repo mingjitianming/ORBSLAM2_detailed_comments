@@ -937,7 +937,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)  // CurrentKe
         // 这里和上面那句话的功能还有些不同,因为如果一次全局优化被中断,往往意味又要重新开启一个新的全局BA;为了中断当前正在执行的优化过程mbStopGBA将会被置位,同时会有一定的时间
         // 使得该线程进行响应;而在开启一个新的全局优化进程之前 mbStopGBA 将会被置为False
         // 因此,如果被强行中断的线程退出时已经有新的线程启动了,mbStopGBA=false,为了避免进行后面的程序,所以有了上面的程序;
-        // 而如果被强行终端的线程退出时新的线程还没有启动,那么上面的条件就不起作用了(虽然概率很小,前面的程序中mbStopGBA置位后很快mnFullBAIdx就++了,保险起见),所以这里要再判断一次
+        // 而如果被强行中断的线程退出时新的线程还没有启动,那么上面的条件就不起作用了(虽然概率很小,前面的程序中mbStopGBA置位后很快mnFullBAIdx就++了,保险起见),所以这里要再判断一次
         if(!mbStopGBA)
         {
             cout << "Global Bundle Adjustment finished" << endl;
@@ -1006,7 +1006,7 @@ void LoopClosing::RunGlobalBundleAdjustment(unsigned long nLoopKF)  // CurrentKe
                     // If optimized by Global BA, just update
                     pMP->SetWorldPos(pMP->mPosGBA);
                 }
-                else // 如故这个地图点并没有直接参与到全局BA优化的过程中,那么就使用器参考关键帧的新位姿来优化自己的位姿
+                else // 如故这个地图点并没有直接参与到全局BA优化的过程中,那么就使用其参考关键帧的新位姿来优化自己的位姿
                 {
                     // Update according to the correction of its reference keyframe
                     KeyFrame* pRefKF = pMP->GetReferenceKeyFrame();
