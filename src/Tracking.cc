@@ -898,7 +898,6 @@ void Tracking::MonocularInitialization()
                 mvbPrevMatched[i]=mCurrentFrame.mvKeysUn[i].pt;
 
             // 删除前判断一下，来避免出现段错误。不过在这里是多余的判断
-            // 不过在这里是多余的判断，因为前面已经判断过了
             if(mpInitializer)
                 delete mpInitializer;
 

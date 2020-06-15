@@ -101,7 +101,7 @@ bool Initializer::Initialize(const Frame &CurrentFrame, const vector<int> &vMatc
     mvMatches12.reserve(mvKeys2.size());
 
     // 记录参考帧1中的每个特征点是否有匹配的特征点
-    // 这个成员变量后面没有用到，后面只关心匹配上的特征点 	
+    // 这个成员变量后面没有用到，后面只关心匹配上的特征点
     mvbMatched1.resize(mvKeys1.size());
 
     // Step 1 重新记录特征点对的匹配关系存储在mvMatches12，是否有匹配存储在mvbMatched1
@@ -301,7 +301,7 @@ void Initializer::FindHomography(vector<bool> &vbMatchesInliers, float &score, c
         // 利用生成的8个归一化特征点对, 调用函数 Initializer::ComputeH21() 使用八点法计算单应矩阵  
         // 关于为什么计算之前要对特征点进行归一化，后面又恢复这个矩阵的尺度？
         // 可以在《计算机视觉中的多视图几何》这本书中P193页中找到答案
-        // 书中这里说,8点算法成功的关键是在构造解的方称之前应对输入的数据认真进行适当的归一化
+        // 书中这里说,8点算法成功的关键是在构造解的方程之前应对输入的数据认真进行适当的归一化
    
         cv::Mat Hn = ComputeH21(vPn1i,vPn2i);
         
