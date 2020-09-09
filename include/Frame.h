@@ -182,34 +182,32 @@ public:
         return mOw.clone();
     }
 
-    // Returns inverse of rotation
-    //NOTICE 默认的mRwc存储的是当前帧时，相机从当前的坐标系变换到世界坐标系所进行的旋转，而我们常谈的旋转则说的是从世界坐标系到当前相机坐标系的旋转
     /**
-     * @brief 返回从世界坐标系到当前帧的旋转矩阵的逆矩阵 
-     * @details 说白了也就是返回从当前帧坐标系到世界坐标系的旋转
-     * 
-     * @return cv::Mat 旋转矩阵\f$\mathbf{R}_{wc}\f$
+     * @brief Get the Rotation Inverse object
+     * mRwc存储的是从当前相机坐标系到世界坐标系所进行的旋转，而我们一般用的旋转则说的是从世界坐标系到当前相机坐标系的旋转
+     * @return 返回从当前帧坐标系到世界坐标系的旋转
      */
     inline cv::Mat GetRotationInverse()
 	{
-		//所以直接返回其实就是我们常谈的旋转的逆了
         return mRwc.clone();
     }
 
     // Check if a MapPoint is in the frustum of the camera
     // and fill variables of the MapPoint to be used by the tracking
-
     /**
-     * @brief 判断路标点是否在视野中,并且对在tracking中使用到的地图点进行处理
-     * @details 计算了重投影坐标，观测方向夹角，预测路标点在当前帧的尺度\n
-     * 猜测是这样的，如果一个点所在的视角偏离平均视角较大（程序中给的是60°），那么认为这个点不可靠
-     * 
-     * @param[in] pMP                   地图点的句柄
-     * @param[in] viewingCosLimit       视角和平均视角的方向阈值
-     * @return true                     在相机视野中
-     * @return false                    不在相机视野中
-     * @see SearchLocalPoints()
-     * V.C 2)-4)
+     * @brief 判断路标点是否在视野中
+     * 步骤
+     * Step 1 获得这个地图点的世界坐标
+     * Step 2 关卡一：检查这个地图点在当前帧的相机坐标系下，是否有正的深度.如果是负的，表示出错，返回false
+     * Step 3 关卡二：将MapPoint投影到当前帧的像素坐标(u,v), 并判断是否在图像有效范围内
+     * Step 4 关卡三：计算MapPoint到相机中心的距离, 并判断是否在尺度变化的距离内
+     * Step 5 关卡四：计算当前视角和“法线”夹角的余弦值, 若小于设定阈值，返回false
+     * Step 6 根据地图点到光心的距离来预测一个尺度（仿照特征点金字塔层级）
+     * Step 7 记录计算得到的一些参数
+     * @param[in] pMP                       当前地图点
+     * @param[in] viewingCosLimit           夹角余弦，用于限制地图点和光心连线和法线的夹角
+     * @return true                         地图点合格，且在视野内
+     * @return false                        地图点不合格，抛弃
      */
     bool isInFrustum(MapPoint* pMP, float viewingCosLimit);
 
@@ -329,7 +327,7 @@ public:
     float mThDepth;
 
     // Number of KeyPoints.
-    int N; ///< KeyPoints数量
+    int N; 
 
     /**
      * @name 关于特征点
@@ -369,11 +367,12 @@ public:
     std::vector<float> mvDepth;
     
     // Bag of Words Vector structures.
-    ///和词袋模型有关的向量
-    DBoW2::BowVector mBowVec;  //词袋向量，记录的是单词的id及其对应权重TF-IDF值
-    ///和词袋模型中特征有关的向量
-    DBoW2::FeatureVector mFeatVec;  //输出，记录node id及其对应的图像 feature对应的索引
-    ///@todo 这两个向量目前的具体含义还不是很清楚
+    // 内部实际存储的是std::map<WordId, WordValue>
+    // WordId 和 WordValue 表示Word在叶子中的id 和权重
+    DBoW2::BowVector mBowVec;
+    // 内部实际存储 std::map<NodeId, std::vector<unsigned int> >
+    // NodeId 表示节点id，std::vector<unsigned int> 中实际存的是该节点id下所有特征点在图像中的索引
+    DBoW2::FeatureVector mFeatVec;
 
     // ORB descriptor, each row associated to a keypoint.
     /// 左目摄像头和右目摄像头特征点对应的描述子
@@ -414,7 +413,8 @@ public:
     long unsigned int mnId; ///< Current Frame id.
 
     // Reference Keyframe.
-    KeyFrame* mpReferenceKF;//<指针，指向参考关键帧
+    // 普通帧与自己共视程度最高的关键帧作为参考关键帧
+    KeyFrame* mpReferenceKF;
 
     /**
      * @name 图像金字塔信息
@@ -423,8 +423,8 @@ public:
     // Scale pyramid info.
     int mnScaleLevels;                  ///<图像金字塔的层数
     float mfScaleFactor;                ///<图像金字塔的尺度因子
-    float mfLogScaleFactor;             ///<图像金字塔的尺度因子的对数值？
-                                        ///@todo 为什么要计算存储这个，有什么实际意义吗
+    float mfLogScaleFactor;             ///<图像金字塔的尺度因子的对数值，用于仿照特征点尺度预测地图点的尺度
+                                  
     vector<float> mvScaleFactors;		///<图像金字塔每一层的缩放因子
     vector<float> mvInvScaleFactors;	///<以及上面的这个变量的倒数
     vector<float> mvLevelSigma2;		///@todo 目前在frame.c中没有用到，无法下定论

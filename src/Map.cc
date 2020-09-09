@@ -66,11 +66,11 @@ void Map::AddMapPoint(MapPoint *pMP)
     mspMapPoints.insert(pMP);
 }
 
-/*
- * @brief Erase MapPoint from the map
- * @param pMP MapPoint
+/**
+ * @brief 从地图中删除地图点,但是其实这个地图点所占用的内存空间并没有被释放
+ * 
+ * @param[in] pMP 
  */
-//从地图中删除地图点,但是其实这个地图点所占用的内存空间并没有被释放
 void Map::EraseMapPoint(MapPoint *pMP)
 {
     unique_lock<mutex> lock(mMutexMap);
@@ -100,7 +100,7 @@ void Map::EraseKeyFrame(KeyFrame *pKF)
  * @brief 设置参考MapPoints，将用于DrawMapPoints函数画图
  * @param vpMPs Local MapPoints
  */
-//NOTE 其实可以看出,这里的参考地图点实际在地图中是一个相对独立的部分
+// 设置参考地图点用于绘图显示局部地图点（红色）
 void Map::SetReferenceMapPoints(const vector<MapPoint *> &vpMPs)
 {
     unique_lock<mutex> lock(mMutexMap);

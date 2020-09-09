@@ -142,6 +142,7 @@ public:
     /**
      * @brief 告知可以观测到该MapPoint的Frame，该MapPoint已被删除
      * //? 最好亲自查看一下这个函数是在哪里被调用的
+     * 
      */
     void SetBadFlag();
     /**
@@ -232,7 +233,8 @@ public:
     const long int mnFirstKFid; ///< 创建该MapPoint的关键帧ID
     //呐,如果是从帧中创建的话,会将普通帧的id存放于这里
     const long int mnFirstFrame; ///< 创建该MapPoint的帧ID（即每一关键帧有一个帧ID）
-    ///被观测到的次数
+
+    // 被观测到的相机数目，单目+1，双目或RGB-D则+2
     int nObs;
 
     // Variables used by the tracking
@@ -246,9 +248,10 @@ public:
     // a 已经和当前帧经过匹配（TrackReferenceKeyFrame，TrackWithMotionModel）但在优化过程中认为是外点
     // b 已经和当前帧经过匹配且为内点，这类点也不需要再进行投影   //? 为什么已经是内点了之后就不需要再进行投影了呢? 
     // c 不在当前相机视野中的点（即未通过isInFrustum判断）     //? 
-    bool mbTrackInView;    //决定一个地图点是否进行重投影的标志
+    bool mbTrackInView;
     // TrackLocalMap - UpdateLocalPoints 中防止将MapPoints重复添加至mvpLocalMapPoints的标记
     long unsigned int mnTrackReferenceForFrame;
+
     // TrackLocalMap - SearchLocalPoints 中决定是否进行isInFrustum判断的变量
     // NOTICE mnLastFrameSeen==mCurrentFrame.mnId的点有几种：
     // a 已经和当前帧经过匹配（TrackReferenceKeyFrame，TrackWithMotionModel）但在优化过程中认为是外点
@@ -257,7 +260,8 @@ public:
 
     //REVIEW 下面的....都没看明白
     // Variables used by local mapping
-    long unsigned int mnBALocalForKF;           ///< 在局部建图线程调用优化的时候使用,防止这个地图点被多个关键帧重复索引
+    // local mapping中记录地图点对应当前局部BA的关键帧的mnId。mnBALocalForKF 在map point.h里面也有同名的变量。
+    long unsigned int mnBALocalForKF;          
     long unsigned int mnFuseCandidateForKF;     ///< 在局部建图线程中使用,表示被用来进行地图点融合的关键帧(存储的是这个关键帧的id)
 
     // Variables used by loop closing -- 一般都是为了避免重复操作
@@ -280,28 +284,26 @@ protected:
     cv::Mat mWorldPos; ///< MapPoint在世界坐标系下的坐标
 
     // Keyframes observing the point and associated index in keyframe
-    std::map<KeyFrame*,size_t> mObservations; ///< 观测到该MapPoint的KF和该MapPoint在KF中的索引
+    // 观测到该MapPoint的KF和该MapPoint在KF中的索引
+    std::map<KeyFrame*,size_t> mObservations; 
 
     // Mean viewing direction
     // 该MapPoint平均观测方向
-    //? 为什么要做这个呢? ORBmatcher.cc中用到此向量，确定搜索区域
+    // 用于判断点是否在可视范围内
     cv::Mat mNormalVector;
 
     // Best descriptor to fast matching
-    // 每个3D点也有一个descriptor
-    // 如果MapPoint与很多帧图像特征点对应（由keyframe来构造时），那么距离其它描述子的平均距离最小的描述子是最佳描述子
-    //? MapPoint只与一帧的图像特征点对应（由frame来构造时），那么这个特征点的描述子就是该3D点的描述子 --  其实就是初始描述子呗 
-    //? 一个变量不能代表两重含义吧
-    cv::Mat mDescriptor; ///< 通过 ComputeDistinctiveDescriptors() 得到的最优描述子
+    // 每个3D点也有一个描述子，但是这个3D点可以观测多个二维特征点，从中选择一个最有代表性的
+     //通过 ComputeDistinctiveDescriptors() 得到的最有代表性描述子,距离其它描述子的平均距离最小
+    cv::Mat mDescriptor; 
 
     /// Reference KeyFrame
-    //? 什么意思? 就是生成它的关键帧吗? 
-    // 解释：通常情况下MapPoint的参考关键帧就是创建该MapPoint的那个关键帧
+    // 通常情况下MapPoint的参考关键帧就是创建该MapPoint的那个关键帧
     KeyFrame* mpRefKF;
 
     /// Tracking counters
-    int mnVisible;  // 能看到改点的frame数目
-    int mnFound;    // 能匹配上改点的frame数目
+    int mnVisible;
+    int mnFound;
 
     /// Bad flag (we do not currently erase MapPoint from memory)
     bool mbBad;

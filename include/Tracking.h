@@ -140,7 +140,7 @@ public:
     // The focal length should be similar or scale prediction will fail when projecting points
     // TODO: Modify MapPoint::PredictScale to take into account focal lenght
     /**
-     * @brief //? 看样子是和更新设置有关系
+     * @brief 
      * 
      * @param[in] strSettingPath 配置文件路径
      */
@@ -276,16 +276,40 @@ protected:
     /** @brief 重定位模块 */
     bool Relocalization();
 
-    /** @brief 更新局部地图 */
+    /**
+     * @brief 更新局部地图 LocalMap
+     *
+     * 局部地图包括：共视关键帧、临近关键帧及其子父关键帧，由这些关键帧观测到的MapPoints
+     */
     void UpdateLocalMap();
     
-    /** @brief 更新局部地图点? //?? */
+    /**
+     * @brief 更新局部地图点（来自局部关键帧）
+     * 
+     */
     void UpdateLocalPoints();
-    /** @brief 跟新局部关键帧 */
-    //? 局部关键帧 ,有什么含义? 是否有对应的全局关键帧?
+
+   /**
+     * @brief 更新局部关键帧
+     * 方法是遍历当前帧的MapPoints，将观测到这些MapPoints的关键帧和相邻的关键帧及其父子关键帧，作为mvpLocalKeyFrames
+     * Step 1：遍历当前帧的MapPoints，记录所有能观测到当前帧MapPoints的关键帧 
+     * Step 2：更新局部关键帧（mvpLocalKeyFrames），添加局部关键帧有三个策略
+     * Step 2.1 策略1：能观测到当前帧MapPoints的关键帧作为局部关键帧 （将邻居拉拢入伙）
+     * Step 2.2 策略2：遍历策略1得到的局部关键帧里共视程度很高的关键帧，将他们的家人和邻居作为局部关键帧
+     * Step 3：更新当前帧的参考关键帧，与自己共视程度最高的关键帧作为参考关键帧
+     */
     void UpdateLocalKeyFrames();
 
-    /** @brief 根据局部地图中的信息进行追踪 */
+    /**
+     * @brief 对Local Map的MapPoints进行跟踪
+     * Step 1：更新局部关键帧 mvpLocalKeyFrames 和局部地图点 mvpLocalMapPoints
+     * Step 2：在局部地图中查找与当前帧匹配的MapPoints, 其实也就是对局部地图点进行跟踪
+     * Step 3：更新局部所有MapPoints后对位姿再次优化
+     * Step 4：更新当前帧的MapPoints被观测程度，并统计跟踪局部地图的效果
+     * Step 5：根据跟踪匹配数目及回环情况决定是否跟踪成功
+     * @return true         跟踪成功
+     * @return false        跟踪失败
+     */
     bool TrackLocalMap();
     /**
      * @brief 对 Local MapPoints 进行跟踪
@@ -349,7 +373,7 @@ protected:
     std::vector<MapPoint*> mvpLocalMapPoints;
     
     // System
-    ///指向系统实例的指针  //? 有什么用?
+    ///指向系统实例的指针 
     System* mpSystem;
     
     //Drawers  可视化查看器相关
@@ -373,9 +397,9 @@ protected:
     float mbf;
 
     //New KeyFrame rules (according to fps)
-    ///和新建关键帧,以及重定位有关
+    // 新建关键帧和重定位中用来判断最小最大时间间隔，和帧率有关
     int mMinFrames;
-    int mMaxFrames;         //? 貌似和图像的帧率有关
+    int mMaxFrames;         
 
     // Threshold close/far points
     // Points seen as close by the stereo/RGBD sensor are considered reliable
@@ -392,17 +416,16 @@ protected:
     int mnMatchesInliers;
 
     //Last Frame, KeyFrame and Relocalisation Info
-    ///上一关键帧
+    // 上一关键帧
     KeyFrame* mpLastKeyFrame;
-    ///上一帧
+    // 上一帧
     Frame mLastFrame;
-    ///上一个关键帧的ID
+    // 上一个关键帧的ID
     unsigned int mnLastKeyFrameId;
-    ///上一次重定位的那一帧的ID
+    // 上一次重定位的那一帧的ID
     unsigned int mnLastRelocFrameId;
 
     //Motion Model
-    ///运动模型 //? 我知道是恒速模型,但是具体上保存的是什么呢?矩阵的数据组织格式又是什么?
     cv::Mat mVelocity;
 
     //Color order (true RGB, false BGR, ignored if grayscale)

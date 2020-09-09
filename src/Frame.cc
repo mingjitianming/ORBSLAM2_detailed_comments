@@ -444,125 +444,93 @@ void Frame::ExtractORB(int flag, const cv::Mat &im)
         (*mpORBextractorRight)(im,cv::Mat(),mvKeysRight,mDescriptorsRight);
 }
 
-// 设置相机姿态，随后会调用 UpdatePoseMatrices() 来改变mRcw,mRwc等变量的值
+// 设置相机姿态
 void Frame::SetPose(cv::Mat Tcw)
 {
-	/** 1. 更改类的成员变量,深拷贝 */
     mTcw = Tcw.clone();
-	/** 2. 调用 Frame::UpdatePoseMatrices() 来更新、计算类的成员变量中所有的位姿矩阵 */
     UpdatePoseMatrices();
 }
 
 //根据Tcw计算mRcw、mtcw和mRwc、mOw
 void Frame::UpdatePoseMatrices()
 {
-    /** 1. 计算mRcw,即相机从世界坐标系到当前帧的相机位置的旋转. \n
-     * 这里是直接从 Frame::mTcw 中提取出旋转矩阵. \n*/
-    // [x_camera 1] = [R|t]*[x_world 1]，坐标为齐次形式
-    // x_camera = R*x_world + t
-	//注意，rowRange这个只取到范围的左边界，而不取右边界
-	//所以下面这个其实就是从变换矩阵中提取出旋转矩阵
+    // mOw：    当前相机光心在世界坐标系下坐标
+    // mTcw：   世界坐标系到相机坐标系的变换矩阵
+    // mRcw：   世界坐标系到相机坐标系的旋转矩阵
+    // mtcw：   世界坐标系到相机坐标系的平移向量
+    // mRwc：   相机坐标系到世界坐标系的旋转矩阵
+
+	//从变换矩阵中提取出旋转矩阵
+    //注意，rowRange这个只取到范围的左边界，而不取右边界
     mRcw = mTcw.rowRange(0,3).colRange(0,3);
-    /** 2. 相反的旋转就是取个逆，对于正交阵也就是取个转置: \n
-     * \f$ \mathbf{R}_{wc}=\mathbf{R}_{cw}^{-1}=\mathbf{R}_{cw}^{\text{T}} \f$ \n
-     * 得到 mRwc .
-     */
+
+    // mRcw求逆即可
     mRwc = mRcw.t();
-	/** 3. 同样地，从变换矩阵 \f$ \mathbf{T}_{cw} \f$中提取出平移向量 \f$ \mathbf{t}_{cw} \f$ \n 
-     * 进而得到 mtcw. 
-     */
+
+    // 从变换矩阵中提取出旋转矩阵
     mtcw = mTcw.rowRange(0,3).col(3);
-    // mtcw, 即相机坐标系下相机坐标系到世界坐标系间的向量, 向量方向由相机坐标系指向世界坐标系
-    // mOw, 即世界坐标系下世界坐标系到相机坐标系间的向量, 向量方向由世界坐标系指向相机坐标系
 
-    //可能又错误,不要看接下来的这一段!!!
-	//其实上面这两个平移向量应当描述的是两个坐标系原点之间的相互位置，mOw也就是相机的中心位置吧（在世界坐标系下）
-	//上面的两个量互为相反的关系,但是由于mtcw这个向量是在相机坐标系下来说的，所以要反旋转变换到世界坐标系下，才能够表示mOw
-
-    /** 4. 最终求得相机光心在世界坐标系下的坐标: \n
-     * \f$ \mathbf{O}_w=-\mathbf{R}_{cw}^{\text{T}}\mathbf{t}_{cw} \f$ \n
-     * 使用这个公式的原因可以按照下面的思路思考. 假设我们有了一个点 \f$ \mathbf{P} \f$ ,有它在世界坐标系下的坐标 \f$ \mathbf{P}_w \f$ 
-     * 和在当前帧相机坐标系下的坐标 \f$ \mathbf{P}_c \f$ ,那么比较容易有: \n
-     * \f$ \mathbf{P}_c=\mathbf{R}_{cw}\mathbf{P}_w+\mathbf{t}_{cw}  \f$ \n
-     * 移项: \n
-     * \f$ \mathbf{P}_c-\mathbf{t}_{cw}=\mathbf{R}_{cw}\mathbf{P}_w \f$ \n
-     * 移项,考虑到旋转矩阵为正交矩阵,其逆等于其转置: \n
-     * \f$ \mathbf{R}_{cw}^{-1}\left(\mathbf{P}_c-\mathbf{t}_{cw}\right)=
-     * \mathbf{R}_{cw}^{\text{T}}\left(\mathbf{P}_c-\mathbf{t}_{cw}\right) = 
-     * \mathbf{P}_w \f$ \n
-     * 此时,如果点\f$ \mathbf{P} \f$就是表示相机光心的话,那么这里的\f$ \mathbf{P}_w \f$也就是相当于 \f$ \mathbf{O}_w \f$ 了,
-     * 并且形象地可以知道 \f$ \mathbf{P}_c=0 \f$. 所以上面的式子就变成了: \n
-     * \f$ \mathbf{O}_w=\mathbf{P}_w=\left(-\mathbf{t}_{cw}\right) \f$ \n
-     * 于是就有了程序中的计算的公式. \n
-     * 也许你会想说为什么不是 \f$ \mathbf{O}_w=-\mathbf{t}_{cw} \f$,是因为如果这样做的话没有考虑到坐标系之间的旋转.
-     */ 
-	
+    // mTcw 求逆后是当前相机坐标系变换到世界坐标系下，对应的光心变换到世界坐标系下就是 mTcw的逆 中对应的平移向量
     mOw = -mRcw.t()*mtcw;
 }
 
-// 判断路标点是否在视野中
+/**
+ * @brief 判断路标点是否在视野中
+ * 步骤
+ * Step 1 获得这个地图点的世界坐标
+ * Step 2 关卡一：检查这个地图点在当前帧的相机坐标系下，是否有正的深度.如果是负的，表示出错，返回false
+ * Step 3 关卡二：将MapPoint投影到当前帧的像素坐标(u,v), 并判断是否在图像有效范围内
+ * Step 4 关卡三：计算MapPoint到相机中心的距离, 并判断是否在尺度变化的距离内
+ * Step 5 关卡四：计算当前相机指向地图点向量和地图点的平均观测方向夹角的余弦值, 若小于设定阈值，返回false
+ * Step 6 根据地图点到光心的距离来预测一个尺度（仿照特征点金字塔层级）
+ * Step 7 记录计算得到的一些参数
+ * @param[in] pMP                       当前地图点
+ * @param[in] viewingCosLimit           夹角余弦，用于限制地图点和光心连线和法线的夹角
+ * @return true                         地图点合格，且在视野内
+ * @return false                        地图点不合格，抛弃
+ */
 bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
-    /** 步骤: \n <ul>*/
-    /**  <li> 1.默认设置标志 MapPoint::mbTrackInView 为否,即设置该地图点不进行重投影. </li>\n
-     * mbTrackInView是决定一个地图点是否进行重投影的标志，这个标志的确定要经过多个函数的确定，isInFrustum()只是其中的一个 
-     * 验证关卡。这里默认设置为否. \n
-     */
+    // mbTrackInView是决定一个地图点是否进行重投影的标志
+    // 这个标志的确定要经过多个函数的确定，isInFrustum()只是其中的一个验证关卡。这里默认设置为否
     pMP->mbTrackInView = false;
 
     // 3D in absolute coordinates
-    /** <li> 2.获得这个地图点的世界坐标, 使用 MapPoint::GetWorldPos() 来获得。</li>\n*/
+    // Step 1 获得这个地图点的世界坐标
     cv::Mat P = pMP->GetWorldPos(); 
 
-    // 3D in camera coordinates 
-    const cv::Mat Pc = mRcw*P+mtcw; // 这里的Rt是经过初步的优化后的
-    //然后提取出三个坐标的坐标值
+    // 3D in camera coordinates
+    // 根据当前帧(粗糙)位姿转化到当前相机坐标系下的三维点Pc
+    const cv::Mat Pc = mRcw*P+mtcw; 
     const float &PcX = Pc.at<float>(0);
     const float &PcY = Pc.at<float>(1);
     const float &PcZ = Pc.at<float>(2);
 
     // Check positive depth
-    /** <li> 4. <b>关卡一</b>：检查这个地图点在当前帧的相机坐标系下，是否有正的深度.如果是负的，就说明它在当前帧下不在相机视野中，也无法在当前帧下进行重投影. </li>*/
+    // Step 2 关卡一：检查这个地图点在当前帧的相机坐标系下，是否有正的深度.如果是负的，表示出错，直接返回false
     if(PcZ<0.0f)
         return false;
 
     // Project in image and check it is not outside
-    /** <li> 5. <b>关卡二</b>：将MapPoint投影到当前帧, 并判断是否在图像内（即是否在图像边界中）。</li>\n
-     * 投影方程： \n
-     * \f$ \begin{cases}
-     * z^{-1} &= \frac{1}{\mathbf{P}_c.Z} \\
-     * u &= z^{-1} f_x \mathbf{P}_c.X + c_x \\
-     * v &= z^{-1} f_y \mathbf{P}_c.Y + c_y 
-     * \end{cases} \f$
-     */ 
-    // V-D 1) 将MapPoint投影到当前帧, 并判断是否在图像内
-    const float invz = 1.0f/PcZ;			//1/Z，其实这个Z在当前的相机坐标系下的话，就是这个点到相机光心的距离，也就是深度
-    const float u=fx*PcX*invz+cx;			//计算投影在当前帧图像上的像素横坐标
-    const float v=fy*PcY*invz+cy;			//计算投影在当前帧图像上的像素纵坐标
+    // Step 3 关卡二：将MapPoint投影到当前帧的像素坐标(u,v), 并判断是否在图像有效范围内
+    const float invz = 1.0f/PcZ;			
+    const float u=fx*PcX*invz+cx;			
+    const float v=fy*PcY*invz+cy;			
 
-    //判断是否在图像边界中，只要不在那么就说明无法在当前帧下进行重投影
+    // 判断是否在图像边界中，只要不在那么就说明无法在当前帧下进行重投影
     if(u<mnMinX || u>mnMaxX)
         return false;
     if(v<mnMinY || v>mnMaxY)
         return false;
 
     // Check distance is in the scale invariance region of the MapPoint
-    // V-D 3) 计算MapPoint到相机中心的距离, 并判断是否在尺度变化的距离内
-    /** <li> 6. <b>关卡三</b>：计算MapPoint到相机中心的距离, 并判断是否在尺度变化的距离内 </li>  \n
-     * 这里所说的尺度变化是指地图点到相机中心距离的一段范围，如果计算出的地图点到相机中心距离不在这个范围的话就认为这个点在 
-     * 当前帧相机位姿下不能够得到正确、有效、可靠的观测，就要跳过. \n
-     * 为了完成这个任务有两个子任务：\n <ul>
-     */ 
-     
-     /** <li> 6.1 得到认为的可靠距离范围。</li> \n
-     *  这个距离的上下限分别通过 MapPoint::GetMaxDistanceInvariance() 和 MapPoint::GetMinDistanceInvariance() 来得到。 */
+    // Step 4 关卡三：计算MapPoint到相机中心的距离, 并判断是否在尺度变化的距离内
+     // 得到认为的可靠距离范围:[0.8f*mfMinDistance, 1.2f*mfMaxDistance]
     const float maxDistance = pMP->GetMaxDistanceInvariance();
     const float minDistance = pMP->GetMinDistanceInvariance();
 
-    /** <li> 6.2 得到当前3D地图点距离当前帧相机光心的距离。</li> \n
-     * 具体实现上是通过构造3D点P到相机光心的向量 \f$\mathbf{P}_0 \f$ ，通过对向量取模即可得到距离\f$dist\f$。
-     * </ul>
-     */
+    // 得到当前地图点距离当前帧相机光心的距离,注意P，mOw都是在同一坐标系下才可以
+    //  mOw：当前相机光心在世界坐标系下坐标
     const cv::Mat PO = P-mOw;
 	//取模就得到了距离
     const float dist = cv::norm(PO);
@@ -572,52 +540,38 @@ bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
         return false;
 
     // Check viewing angle
-    // V-D 2) 计算当前视角和平均视角夹角的余弦值, 若小于cos(60), 即夹角大于60度则返回
-    /** <li> 7. <b>关卡四</b>：计算当前视角和平均视角夹角的余弦值, 若小于cos(60), 即夹角大于60度则返回 </li>     
-     * <ul>
-     */ 
-    /** <li> 7.1 使用 MapPoint::GetNormal() 来获得平均视角(其实是一个单位向量\f$ \mathbf{P}_n \f$ ) </li> */
-	//获取平均视角，目测这个平均视角只是一个方向向量，模长为1，它表示了当前帧下观测到的点的分布情况
-	//TODO 但是这个平均视角是在mapoint.cpp中计算的，还不是很清楚这个具体含义  其实现在我觉得就是普通的视角的理解吧
+    // Step 5 关卡四：计算当前相机指向地图点向量和地图点的平均观测方向夹角的余弦值, 若小于cos(viewingCosLimit), 即夹角大于viewingCosLimit弧度则返回
     cv::Mat Pn = pMP->GetNormal();
 
-	/** <li> 7.2 计算当前视角和平均视角夹角的余弦值，注意平均视角为单位向量 </li>  \n
-     * 其实就是初中学的计算公式： \n
-     * \f$  viewCos= {\mathbf{P}_0 \cdot \mathbf{P}_n }/{dist} \f$
-    */
+	// 计算当前相机指向地图点向量和地图点的平均观测方向夹角的余弦值，注意平均观测方向为单位向量
     const float viewCos = PO.dot(Pn)/dist;
 
-    /** <li> 7.3 然后判断视角是否超过阈值即可。 </li></ul> */
-	//如果大于规定的阈值，认为这个点太偏了，重投影不可靠，返回
+	//如果大于给定的阈值 cos(60°)=0.5，认为这个点方向太偏了，重投影不可靠，返回false
     if(viewCos<viewingCosLimit)
         return false;
 
     // Predict scale in the image
-    // V-D 4) 根据深度预测尺度（对应特征点在一层）
-    /** <li> 8. 经过了上面的重重考验，说明这个地图点可以被重投影了。接下来需要记录关于这个地图点的一些信息：</li> <ul>*/
-     
-    //注意在特征点提取的过程中,图像金字塔的不同的层代表着特征点的不同的尺度
-    // 由于地图点与特征点没有匹配关系，所以地图点对应的图像金字塔的尺度信息需要预测。
-    /** <li> 8.1 使用 MapPoint::PredictScale() 来预测该地图点在现有距离 \f$ dist \f$ 下时，在当前帧
-     * 的图像金字塔中，所可能对应的尺度。\n
-     * 其实也就是预测可能会在哪一层。这个信息将会被保存在这个地图点对象的 MapPoint::mnTrackScaleLevel 中。
-    */
+    // Step 6 根据地图点到光心的距离来预测一个尺度（仿照特征点金字塔层级）
     const int nPredictedLevel = pMP->PredictScale(dist,		//这个点到光心的距离
 												  this);	//给出这个帧
-
+    // Step 7 记录计算得到的一些参数
     // Data used by the tracking	
-    /** <li> 8.2 通过置位标记 MapPoint::mbTrackInView 来表示这个地图点要被投影 </li> */
+    // 通过置位标记 MapPoint::mbTrackInView 来表示这个地图点要被投影 
     pMP->mbTrackInView = true;	
-    /** 
-     * 其来源参考SLAM十四讲的P51式5.16。
-    */
-    pMP->mTrackProjX = u;				//该地图点投影在左侧图像的像素横坐标
-    pMP->mTrackProjXR = u - mbf*invz; 	//bf/z其实是视差，为了求右图像中对应点的横坐标就得这样减了～
-										//这里确实直接使用mbf计算会非常方便
-    pMP->mTrackProjY = v;				//该地图点投影在左侧图像的像素纵坐标
 
-    pMP->mnTrackScaleLevel = nPredictedLevel;	// 存储根据深度预测的尺度，在接下来的searchbyprojection中使用
-    // 保存当前视角和平均视角夹角的余弦值 
+    // 该地图点投影在当前图像（一般是左图）的像素横坐标
+    pMP->mTrackProjX = u;	
+
+    // bf/z其实是视差，相减得到右图（如有）中对应点的横坐标
+    pMP->mTrackProjXR = u - mbf*invz; 
+
+	// 该地图点投影在当前图像（一般是左图）的像素纵坐标									
+    pMP->mTrackProjY = v;				
+
+    // 根据地图点到光心距离，预测的该地图点的尺度层级
+    pMP->mnTrackScaleLevel = nPredictedLevel;		
+
+    // 保存当前视角和法线夹角的余弦值
     pMP->mTrackViewCos = viewCos;					
 
     //执行到这里说明这个地图点在相机的视野中并且进行重投影是可靠的，返回true
@@ -701,8 +655,7 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
                         if(kpUn.octave>maxLevel)
                             continue;
                 }               
-                
-                // ? 在矩形内查找候选点
+
                 // 通过检查，计算候选特征点到圆中心的距离，查看是否是在这个圆形区域之内
                 const float distx = kpUn.pt.x-x;
                 const float disty = kpUn.pt.y-y;
@@ -744,11 +697,14 @@ bool Frame::PosInGrid(const cv::KeyPoint &kp, int &posX, int &posY)
     return true;
 }
 
-//计算词包 mBowVec 和 mFeatVec
+/**
+ * @brief 计算当前帧特征点对应的词袋Bow，主要是mBowVec 和 mFeatVec
+ * 
+ */
 void Frame::ComputeBoW()
 {
 	
-    /** 这个函数只有在当前帧的词袋是空的时候才回进行操作。步骤如下:<ul> */
+    // 判断是否以前已经计算过了，计算过了就跳过
     if(mBowVec.empty())
     {
 		// 将描述子mDescriptors转换为DBOW要求的输入格式
@@ -759,7 +715,6 @@ void Frame::ComputeBoW()
 								   mFeatVec,		//输出，记录node id及其对应的图像 feature对应的索引
 								   4);				//4表示从叶节点向前数的层数
     }
-    /** </ul> */
 }
 
 /**
@@ -903,7 +858,7 @@ void Frame::ComputeStereoMatches()
     // vRowIndices[0] = [1，2，5，8, 11]   第1行有5个特征点,他们的列号（即x坐标）分别是1,2,5,8,11
     // vRowIndices[1] = [2，6，7，9, 13, 17, 20]  第2行有7个特征点.etc
     vector<vector<size_t> > vRowIndices(nRows, vector<size_t>());
-    for(int i=0; i<nRows; i++） vRowIndices[i].reserve(200);
+    for(int i=0; i<nRows; i++) vRowIndices[i].reserve(200);
 
 	// 右图特征点数量，N表示数量 r表示右图，且不能被修改
     const int Nr = mvKeysRight.size();
@@ -991,6 +946,7 @@ void Frame::ComputeStereoMatches()
                 }
             }
         }
+    
         
         // 如果刚才匹配过程中的最佳描述子距离小于给定的阈值
         // Step 3. 精确匹配. 
@@ -1105,7 +1061,7 @@ void Frame::ComputeStereoMatches()
                 vDistIdx.push_back(pair<int,int>(bestDist,iL));
         }   
     }
-
+    }
     // Step 6. 删除离缺点(outliers)
     // 块匹配相似度阈值判断，归一化sad最小，并不代表就一定是匹配的，比如光照变化、弱纹理、无纹理等同样会造成误匹配
     // 误匹配判断条件  norm_sad > 1.5 * 1.4 * median
